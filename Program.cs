@@ -1,12 +1,15 @@
 ﻿using SerenattoEnsaio.Dados;
 using SerenattoEnsaio.Modelos;
 using SerenattoPreGravacao.Dados;
+using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
 IEnumerable<Cliente> clientes = DadosClientes.GetClientes().ToList();
 IEnumerable<string> formasPagamento = DadosFormaDePagamento.FormasDePagamento;
 IEnumerable<Produto> cardapioLoja = DadosCardapio.GetProdutos().ToList();
+IEnumerable<Produto> cardapioDelivery = DadosCardapio.CardapioDelivery();
+IEnumerable<int> totalPedidosMes = DadosPedidos.QuantidadeItensPedidosPorDia.SelectMany(lista => lista);
 
 
 Console.WriteLine("RELATÓRIO DE DADOS CLIENTES");
@@ -44,7 +47,6 @@ foreach (var item in cardapioLoja)
 {
     Console.WriteLine($"{item.Id} | {item.Nome} | {item.Descricao} | {item.Preco}");
 }
-
 
 Console.WriteLine("-------------------------------------------------------------------------------");
 Console.WriteLine("RELATÓRIOS INFORMAÇÕES CARDÁPIOS POR NOME");
@@ -87,8 +89,6 @@ foreach (var item in itensPrecoCombo)
 Console.WriteLine("-------------------------------------------------------------------------------");
 Console.WriteLine("RELATÓRIO QUANTIDADE DE PRODUTOS PEDIDOS NO MÊS");
 
-IEnumerable<int> totalPedidosMes = DadosPedidos.QuantidadeItensPedidosPorDia.SelectMany(lista => lista);
-
 foreach (var pedido in totalPedidosMes)
 {
     Console.Write($"{pedido} ");
@@ -99,8 +99,7 @@ Console.WriteLine();
 Console.WriteLine("-------------------------------------------------------------------------------");
 Console.WriteLine("RELATÓRIO QUANTIDADE DE PEDIDOS INDIVIDUAIS MÊS");
 
-var pedidosIndividuais = DadosPedidos.QuantidadeItensPedidosPorDia
-    .SelectMany(lista => lista)
+var pedidosIndividuais = totalPedidosMes
     .Count(n => n == 1);
 
 Console.WriteLine($"A quentidade de pedidos individuais no mês foi: {pedidosIndividuais}");
@@ -117,4 +116,74 @@ var contatoENomeCliente = clientes.Select(c => new
 foreach (var cliente in contatoENomeCliente)
 {
     Console.WriteLine($"{cliente.nomeCliente} | {cliente.contatoCliente}");
+}
+
+Console.WriteLine("-------------------------------------------------------------------------------");
+Console.WriteLine("RELATÓRIO PEDIDOS COM QUANTIDADE DIFERENTES");
+
+var totalPedidosDiferentes = totalPedidosMes.Distinct();
+
+foreach (var itemPedido  in totalPedidosDiferentes)
+{
+    Console.Write($"{itemPedido} ");
+}
+
+Console.WriteLine();
+Console.WriteLine("-------------------------------------------------------------------------------");
+Console.WriteLine("RELATÓRIO PRODUTOS EXCLUSIVOS LOJA");
+
+var produtosLoja = cardapioLoja.Select(p => p.Nome);
+var produtosDelivery = cardapioDelivery.Select(p => p.Nome);
+
+var produtosExclusivosLoja = produtosLoja.Except(produtosDelivery).ToList();
+
+foreach (var produto in produtosExclusivosLoja)
+{
+    Console.WriteLine(produto);
+}
+
+Console.WriteLine("-------------------------------------------------------------------------------");
+Console.WriteLine("RELATÓRIO PRODUTOS LOJA E DELIVERY");
+
+var listaProdutosCardapioEDelivey = produtosLoja.Intersect(produtosDelivery).ToList(); 
+
+foreach (var produto in listaProdutosCardapioEDelivey)
+{
+    Console.WriteLine(produto);
+}
+
+Console.WriteLine("-------------------------------------------------------------------------------");
+Console.WriteLine("RELATÓRIO PRODUTOS OFERECIDOS PELA LOJA");
+
+var listaGeralProdutos = listaProdutosCardapioEDelivey.Union(produtosDelivery).ToList();
+
+foreach (var produto in listaGeralProdutos)
+{
+    Console.WriteLine(produto);
+}
+
+
+Console.WriteLine("-------------------------------------------------------------------------------");
+Console.WriteLine("RELATÓRIO PRODUTOS OFERECIDOS PELA LOJA");
+
+var cardapioOrdenado = cardapioLoja
+    .OrderBy(p => p.Nome)
+    .ThenBy(p => p.Preco);
+
+foreach (var produto in cardapioOrdenado)
+{
+    Console.WriteLine($"{produto.Nome} | R$ {produto.Preco},00");
+}
+
+Console.WriteLine("-------------------------------------------------------------------------------");
+Console.WriteLine("RELATÓRIO NOMES E ENDERECO CLIENTES PROMOÇÃO");
+
+var clientePromocao = clientes
+    .OrderBy(c => c.Nome)
+    .ThenBy(c => c.Endereco)
+    .ToList();
+
+foreach(var cliente in clientePromocao)
+{
+    Console.WriteLine($"{cliente.Nome} | {cliente.Endereco}");
 }
