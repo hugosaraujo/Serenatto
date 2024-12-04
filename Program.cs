@@ -10,6 +10,7 @@ IEnumerable<string> formasPagamento = DadosFormaDePagamento.FormasDePagamento;
 IEnumerable<Produto> cardapioLoja = DadosCardapio.GetProdutos().ToList();
 IEnumerable<Produto> cardapioDelivery = DadosCardapio.CardapioDelivery();
 IEnumerable<int> totalPedidosMes = DadosPedidos.QuantidadeItensPedidosPorDia.SelectMany(lista => lista);
+IEnumerable<Produto> carrinho = DadosCarrinho.GetProdutosCarrinho();
 
 
 Console.WriteLine("RELATÓRIO DE DADOS CLIENTES");
@@ -187,3 +188,27 @@ foreach(var cliente in clientePromocao)
 {
     Console.WriteLine($"{cliente.Nome} | {cliente.Endereco}");
 }
+
+
+Console.WriteLine("-------------------------------------------------------------------------------");
+Console.WriteLine("RELATÓRIO CARRINHO DE COMPRAS");
+
+IEnumerable<string> nomesProdutos = carrinho.Select(c => c.Nome);
+IEnumerable<decimal> precosProdutos = carrinho.Select(c => c.Preco);
+
+string resultado = nomesProdutos.Aggregate((p1, p2) => p1 + " - " + p2);
+//decimal totalPrecos = precosProdutos.Aggregate((p1, p2) => p1 + p2);
+decimal totalPrecos = precosProdutos.Sum();
+int quantidadeProdutos = carrinho.Count();
+var agrupamentoPorNome = carrinho.GroupBy(p => p.Nome);
+
+Console.WriteLine(resultado);
+Console.WriteLine($"Quantidade Produtos: {quantidadeProdutos}");
+
+foreach(var grupo in agrupamentoPorNome)
+{
+    Console.WriteLine($"Nome do Produto: {grupo.Key}");
+    Console.WriteLine($"Quantidade do Produto: {grupo.Count()}");
+}
+
+Console.WriteLine($"Valor total da compra = R${totalPrecos},00");
